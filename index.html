@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De Havilland Canada | BEAKON Sales Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;color:#333;overflow-x:hidden;}
+.topbar{background:#0a2342;color:white;padding:12px 20px;display:flex;align-items:center;gap:20px;border-bottom:3px solid #0078d4;position:sticky;top:0;z-index:100;}
+.logo-pill{background:white;color:#0078d4;padding:6px 12px;border-radius:20px;font-weight:bold;font-size:13px;}
+.topbar-title{flex:1;font-size:18px;font-weight:600;}
+.pill{background:rgba(255,255,255,0.15);padding:5px 10px;border-radius:15px;font-size:12px;}
+.pill-status{background:#4caf50;padding:5px 10px;border-radius:15px;font-size:12px;}
+.refresh-banner{background:#0078d4;color:white;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;font-size:13px;position:sticky;top:50px;z-index:99;}
+.container{display:flex;min-height:calc(100vh - 80px);}
+.sidebar{width:240px;background:#0a2342;color:white;padding:20px 0;overflow-y:auto;height:calc(100vh - 80px);position:sticky;top:80px;}
+.sidebar-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#999;padding:0 15px;margin-bottom:8px;letter-spacing:0.5px;}
+.sidebar-section{margin-bottom:22px;}
+.sidebar-item{padding:10px 15px;cursor:pointer;font-size:13px;transition:all 0.2s;border-left:3px solid transparent;}
+.sidebar-item:hover{background:rgba(0,120,212,0.2);}
+.sidebar-item.active{background:rgba(0,120,212,0.3);border-left-color:#0078d4;font-weight:600;}
+.sidebar-meta{font-size:10px;color:#aaa;padding:2px 15px 8px 15px;line-height:1.4;}
+.main-content{flex:1;padding:30px;overflow-y:auto;height:calc(100vh - 80px);}
+.section{display:none;}
+.section.active{display:block;}
+.section-title{font-size:24px;font-weight:700;margin-bottom:25px;color:#0a2342;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:25px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:25px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px;}
+.card{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-top:3px solid #0078d4;}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:15px;letter-spacing:0.5px;}
+.kpi{font-size:32px;font-weight:700;color:#0a2342;margin-bottom:5px;}
+.kpi-label{font-size:12px;color:#999;}
+.kpi-change{font-size:12px;color:#4caf50;margin-top:5px;}
+.kpi-change-neg{font-size:12px;color:#f44336;margin-top:5px;}
+.tag{display:inline-block;background:#f0f0f0;color:#333;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:6px;}
+.tag-accent{background:rgba(0,120,212,0.12);color:#0078d4;}
+.tag-hot{background:#fdecea;color:#c62828;}
+.tag-india{background:#fef3c7;color:#92400e;}
+.tag-def{background:#e8f5e9;color:#1b5e20;}
+.contact-card{background:white;border-radius:6px;padding:15px;border-left:3px solid #0078d4;margin-bottom:12px;font-size:12px;}
+.contact-name{font-weight:600;color:#0a2342;margin-bottom:2px;}
+.contact-title{color:#666;font-size:11px;margin-bottom:5px;}
+.contact-location{color:#999;font-size:10px;}
+.prog-row{margin-bottom:15px;}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#666;margin-bottom:5px;}
+.prog-bar{width:100%;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;background:#0078d4;border-radius:4px;}
+.loc-us{background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.loc-ca{background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.loc-india{background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.chain{display:flex;align-items:stretch;gap:0;margin-bottom:14px;border-radius:10px;overflow:hidden;}
+.chain-num{color:#fff;width:38px;min-width:38px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;}
+.chain-body{flex:1;display:flex;flex-wrap:wrap;}
+.chain-cell{flex:1;min-width:200px;padding:12px 15px;border-right:1px solid #e4eaf5;}
+.chain-cell:last-child{border-right:none;}
+.chain-label{font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:5px;}
+.chain-head{font-size:12.5px;font-weight:700;color:#0a2342;}
+.chain-body-text{font-size:11.5px;color:#5a6a8a;margin-top:4px;line-height:1.6;}
+.bu-block{background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);margin-bottom:20px;}
+.bu-header{padding:14px 18px;display:flex;align-items:center;gap:10px;}
+.bu-header-title{font-size:15px;font-weight:700;color:white;}
+.bu-header-sub{font-size:11px;color:rgba(255,255,255,0.85);}
+.bu-action{padding:14px 18px;border-bottom:1px solid #f0f0f0;}
+.bu-action:last-child{border-bottom:none;}
+.bu-action-num{display:inline-block;background:#0078d4;color:white;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px;font-size:11px;font-weight:700;margin-right:8px;}
+.bu-action-title{font-size:13px;font-weight:700;color:#0a2342;margin-bottom:6px;}
+.bu-action-body{font-size:12px;color:#444;line-height:1.65;margin-bottom:8px;}
+.fast-sell{background:#e8f4fd;border-left:3px solid #0078d4;padding:7px 10px;border-radius:0 6px 6px 0;font-size:11px;color:#0a2342;font-weight:600;}
+.prog-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:6px;margin-bottom:6px;}
+::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:#f1f1f1;}::-webkit-scrollbar-thumb{background:#0078d4;border-radius:4px;}
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.grid-3{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ══ DYNAMIC DATA STORE — De Havilland Canada ══ -->
+<script>
+const DHC_DATA = {
+  lastRefreshed: "Apr 19, 2026",
+  dataSource: "De Havilland Canada press releases + DHC-515 program updates + Longview Aviation Capital announcements 2025-2026",
+
+  // Financial overview
+  revenue:        "131-384M",  // Private company estimated range USD
+  revenueStatus:  "Private / Estimated",
+  headcount:      1500,        // 1,500-2,000 range, use conservative
+  employees:     2000,         // upper estimate
+  openRoles:      85,          // estimated from LinkedIn + program growth
+
+  // Key sites
+  sites: {
+    calgary:      { label: "Calgary AB (HQ)", programs: ["Corporate HQ", "Strategy & Finance"], roles: 180 },
+    strathmore:   { label: "Strathmore AB (De Havilland Field)", programs: ["DHC-515 Assembly (NEW)", "Q400 Restart Preparation", "Main assembly facility"], roles: 450 },
+    downsview:    { label: "Downsview ON (Legacy)", programs: ["Q400 legacy support", "Twin Otter support", "Winding down some ops"], roles: 520 },
+    mirabel:      { label: "Mirabel QC", programs: ["Subassembly work", "Component manufacturing"], roles: 250 }
+  },
+
+  // Leadership & contacts (VP Engineering and above ONLY — NO TA/HR)
+  leadership: {
+    ceo:  { name:"Brian Chafe",       title:"President & CEO, De Havilland Canada",       since:"2019", location:"Calgary, AB" },
+    vpEng:{ name:"VP Engineering (search LinkedIn)", title:"VP Engineering — Q400 + DHC-515 programs", since:"—", location:"Strathmore / Calgary AB" },
+    vpCert:{ name:"Director, Certification Engineering", title:"FAA/TC type cert programs — DHC-515 lead", since:"—", location:"Strathmore AB" },
+    programDirec: { name:"Director, DHC-515 Program", title:"DHC-515 Aircraft Production Director", since:"—", location:"Strathmore AB" }
+  },
+
+  keyContacts: [
+    { name:"Brian Chafe",             title:"President & CEO",                 loc:"Calgary, AB",  badge:"C-Suite",   color:"#0055a5",
+      pitch:"DHC-515 is brand-new production — zero legacy documentation. Cyient's greenfield S1000D expertise matches this perfectly. Pitch: 'New aircraft, new docs. Your Q400 restart + DHC-515 means doc bandwidth crunch. We handle both in parallel.'" },
+    { name:"VP Engineering Operations",  title:"Owns engineering delivery for Q400 + DHC-515", loc:"Strathmore AB", badge:"Primary Target", color:"#1b5e20",
+      pitch:"Strategic decision-maker for DHC-515 certification engineering and Q400 restart docs. Entry: S1000D AMM authoring pilot for DHC-515 Chapter 05 + 12. Search: 'De Havilland Canada VP Engineering' on LinkedIn." },
+    { name:"Director, Certification Engineering", title:"Leads FAA/TC type cert for DHC-515", loc:"Strathmore AB", badge:"Hot Target", color:"#c62828",
+      pitch:"Critical path contact: DHC-515 first aircraft assembly March 2026 → cert in 2028. Documentation is the critical path. Decision-maker on AMM/AFM/FCOM vendor selection. Search: 'De Havilland Canada Certification Director' LinkedIn." },
+    { name:"Director, DHC-515 Program", title:"Production Director · DHC-515 program leadership", loc:"Strathmore AB", badge:"Engineering Buyer", color:"#0055a5",
+      pitch:"DHC-515 production director — owns schedule and vendor management. Entry: 'First aircraft assembly March 2026 means doc authoring starts now. 6-week pilot: Chapter 05 Limits + Chapter 12 Servicing. Hyderabad delivery.'" },
+    { name:"Q400 Chief Engineer", title:"Leads Q400 production restart engineering", loc:"Strathmore / Calgary AB", badge:"Program Tech Lead", color:"#0076be",
+      pitch:"Q400 production restart at Alberta facility = re-qualification engineering + SB/AD revisions. Offshore documentation support is a cost lever. Pitch: 'We've delivered Q400 SB content before. Your restart timeline is tight — we can accelerate.'" }
+  ],
+
+  outreachPlaybook: {
+    badge: "Cold→Warm",
+    headline: "DHC-515 first assembly March 2026 + Q400 production restart = documentation bandwidth crisis right now",
+    triggers: [
+      { icon:"✈️", label:"DHC-515 First Aircraft Assembly (March 2026)",
+        body:"De Havilland Canada began assembly of the first DHC-515 amphibious firefighter in March 2026 at Strathmore, Alberta. 20+ firm orders (Greece 7, Croatia 2, Alberta 5, Canada federal). Target delivery 2028. Zero existing documentation for a brand-new aircraft type = all AMM/AFM/FCOM content is greenfield. This is critical-path documentation work NOW.",
+        action:"Email hook: 'DHC-515 is brand-new. You're starting with a blank slate on documentation. We've done greenfield S1000D AMM for new aircraft programs. 6-week pilot on Chapter 05 + 12?' Fast-sell: Zero legacy migration. Pure authoring." },
+      { icon:"✈️", label:"Q400 Production Restart (2027–2028 Target)",
+        body:"De Havilland is restarting DHC-8 Q400 production at De Havilland Field, Strathmore after Bombardier's production hiatus. 80-seat regional turboprop with 500+ in service. Production restart requires re-qualification engineering, SB/AD revision cycles, and supplier documentation updates. Parallel to DHC-515 production = documentation overload.",
+        action:"Pitch: 'Q400 restart means re-cert docs + supplier updates. Your team can't absorb both Q400 + DHC-515 in parallel. We've handled regional turboprop documentation at this scale. Pilot: Q400 Chapter 27 (Flight Controls) SB package.'" },
+      { icon:"🇬🇷", label:"Greece Order — DHC-515 Prototype + 6 Production Aircraft",
+        body:"De Havilland signed firm order from Greece (7 aircraft) for DHC-515 firefighting operations. This is the flagship customer order and validates the program commercially. Greece delivery target: 2028 → certification + documentation must be flight-ready by Q4 2027. Aggressive timeline = vendor support is critical.",
+        action:"Signal: 'Greece order makes this real. We can support the Greece delivery timeline with parallel S1000D authoring for Chapters 1-5 and pilot emergency procedures.'" },
+      { icon:"🇮🇳", label:"India ER&D Opportunity — Greenfield S1000D + No Legacy Docs",
+        body:"De Havilland has zero India engineering presence. All engineering is Canada-based. DHC-515 is a brand-new aircraft with zero existing documentation — perfect for offshore greenfield authoring. Q400 restart also needs supply chain support. India cost model is a natural fit for documentation-heavy programs.",
+        action:"Meeting hook: 'Bombardier uses offshore ER&D at scale. De Havilland doesn't have an India footprint yet. You're sitting on the most aggressive timeline in turboprop history — let's talk India delivery economics for DHC-515.'" }
+    ],
+    coldToWarm: [
+      { step:1, label:"Signal Monitor", body:"Track DHC-515 first aircraft milestones, Q400 restart announcements, Greece/Croatia delivery schedules. Each milestone = engineering demand signal." },
+      { step:2, label:"Personalised Email", body:"Reference DHC-515 assembly start or Q400 restart news. One sentence on Cyient's new-aircraft documentation track record. One question: schedule." },
+      { step:3, label:"LinkedIn Outreach", body:"Connect with DHC VP Engineering and Certification Director at Strathmore. Engage DHC-515 program updates with technical publication context." },
+      { step:4, label:"Event Pre-Outreach", body:"NBAA-BACE Oct 20–22: DHC has booth presence. Email 2 weeks before to schedule 20-min meeting with VP Eng." },
+      { step:5, label:"Warm Meeting", body:"Agenda: DHC-515 timeline (first delivery 2028) → certification docs critical path → Cyient greenfield S1000D capability → 6-week pilot scope." }
+    ]
+  },
+
+  partnerships: [
+    { name:"Longview Aviation Capital", type:"Parent Company / Investor", status:"Owner since 2019",
+      desc:"Private holding company owned by Victor de Zen and Richardson family consortium. Also owns Viking Air (Twin Otter restart), Pacific Coastal Airlines, Calm Air. De Havilland is anchor asset in integrated Canadian aviation group.",
+      angle:"Longview = strategic decision-maker on vendor partnerships. Viking Air precedent: uses external tech pubs vendors for Twin Otter support. Entry: Longview CEO or VP Strategy through De Havilland relationship." },
+    { name:"Pratt & Whitney Canada", type:"Engine OEM Partner", status:"Active",
+      desc:"PW150A engines power DHC-8 Q400 fleet. PW123AF engines on DHC-515. Long-term propulsion partnerships for both programs.",
+      angle:"Tech pubs for Q400 engine integration + DHC-515 engine interface documentation. Cyient can position as integration partner between P&W and DHC propulsion teams." },
+    { name:"Transport Canada (TC) / FAA", type:"Certification Partners", status:"Active",
+      desc:"DHC-515 is undergoing FAA/TC type certification process. Critical-path regulatory engagement for first delivery 2028.",
+      angle:"Certification documentation support (CS-23 / 27 equivalent, Emergency Procedures, AFM) is offshore-deliverable. Position Cyient as TC shadow-cert documentation accelerator." },
+    { name:"Canadian Government / Alberta", type:"Industrial / Political Support", status:"Active",
+      desc:"Alberta government supports Strathmore facility build-out and Q400 restart. Federal government is ordering DHC-515 aircraft. Political momentum = program stability.",
+      angle:"Government contracts and political tailwind create procurement efficiency. Private company (no red tape) + government backing = faster vendor onboarding potential vs. OEMs." }
+  ],
+
+  events: [
+    { name:"NBAA-BACE", date:"Oct 20–22, 2026", location:"Las Vegas, NV",
+      type:"Trade Show", priority:"🔴 MUST",
+      why:"De Havilland's premier annual event for DHC-515 and Q400 messaging. Executive leadership and engineering VP all present. Best single opportunity to engage Strathmore team." },
+    { name:"Regional Airline Association (RAA) Annual Conference", date:"Sep 18–20, 2026", location:"San Francisco, CA",
+      type:"Trade Show", priority:"🔴 MUST",
+      why:"Q400 target customer base: Air Canada Express, FlyBe, Horizon Air. DHC showcases Q400 restart. Procurement and engineering leadership attend." },
+    { name:"Farnborough Airshow", date:"July 20–24, 2026", location:"Farnborough, UK",
+      type:"Trade Show", priority:"🟡 MEDIUM",
+      why:"De Havilland signs international orders and partnership agreements. Supply chain and engineering leadership attend. Greece/Croatia order visibility." },
+    { name:"HAI Heli-Expo", date:"Mar 9–12, 2026", location:"Atlanta, GA",
+      type:"Trade Show", priority:"🟡 MEDIUM",
+      why:"DHC-515 is an aerial fire suppression aircraft — rotary-wing adjacent. Good for Twin Otter adjacent relationship building (Viking Air sister company)." }
+  ],
+
+  programs: {
+    dhc515: { name: "DHC-515 Firefighter", status: "First assembly March 2026", note: "Amphibious aerial firefighting. 20+ firm orders. Target delivery 2028. New aircraft = greenfield documentation demand." },
+    q400: { name: "DHC-8 Q400", status: "Production restart 2027-2028", note: "80-seat turboprop. 500+ in service. Restart at Strathmore AB. Re-qual docs + SB/AD revisions." },
+    twinOtter: { name: "Twin Otter Series 400 (DHC-6)", status: "In production (Viking Air)", note: "19-seat utility. 1,000th delivery March 2026 milestone. Ongoing IPC/SB support via sister company." },
+    legacy: { name: "Legacy Programs", status: "Support only", note: "DHC-7 Dash 7, DHC-4 Caribou, DHC-3 Otter — support through Viking Air and Downsview facilities." }
+  }
+};
+</script>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-pill">✈ BEAKON</div>
+  <div class="topbar-title">De Havilland Canada — Sales Intelligence Dashboard</div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <div class="pill">Private / Estimated $131–384M</div>
+    <div class="pill">1,500–2,000 Employees</div>
+    <div class="pill">Longview Aviation</div>
+    <div class="pill-status">● Live</div>
+  </div>
+</div>
+
+<!-- REFRESH BANNER -->
+<div class="refresh-banner">
+  <span>📡 De Havilland Canada — Private regional turboprop/amphibious OEM · CEO: Brian Chafe · DHC-515 first assembly March 2026 · Q400 restart 2027–2028 · ~1,500–2,000 employees</span>
+  <span style="font-size:11px;opacity:.8;">Data: Apr 2026</span>
+</div>
+
+<div class="container">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">De Havilland Canada</div>
+    <div class="sidebar-meta">Calgary AB · Strathmore AB<br>Downsview ON · Mirabel QC<br>DHC-515 · Q400 · Twin Otter</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Sales</div>
+    <div class="sidebar-item active" onclick="switchSection(event,'overview')">📊 Summary KPIs</div>
+    <div class="sidebar-item" onclick="switchSection(event,'contacts')">👥 Key Contacts</div>
+    <div class="sidebar-item" onclick="switchSection(event,'actions')">🎯 Sales Actions</div>
+    <div class="sidebar-item" onclick="switchSection(event,'skills')">⚡ Fast-Sell Skills</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Intelligence</div>
+    <div class="sidebar-item" onclick="switchSection(event,'hiring')">💼 Hiring Intelligence</div>
+    <div class="sidebar-item" onclick="switchSection(event,'signals')">📡 Signal Chains</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Outreach Playbook</div>
+    <div class="sidebar-item" onclick="switchSection(event,'outreach')">🤝 Outreach Playbook <span style="background:#4caf50;color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:4px;">Cold→Warm</span></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Partnership & Alliances</div>
+    <div class="sidebar-item" onclick="switchSection(event,'partnerships')">🤝 Partnerships</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Industry Events</div>
+    <div class="sidebar-item" onclick="switchSection(event,'events')">📅 Industry Events</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Programs & Strategy</div>
+    <div class="sidebar-item" onclick="switchSection(event,'programs')">✈️ Aircraft Programs</div>
+    <div class="sidebar-item" onclick="switchSection(event,'india')">🇮🇳 India Opportunity</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Reference</div>
+    <div class="sidebar-item" onclick="switchSection(event,'reference')">📚 Market Context</div>
+  </div>
+  <div style="padding:15px;font-size:10px;color:#666;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px;">
+    Last refreshed: <span id="sb-refresh">—</span>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
+<!-- ═══ OVERVIEW ═══ -->
+<div id="overview" class="section active">
+  <div class="section-title">📊 De Havilland Canada — Summary KPIs</div>
+
+  <!-- Strategic banner -->
+  <div style="background:linear-gradient(135deg,#0a2342,#0078d4);color:white;border-radius:10px;padding:15px 20px;margin-bottom:22px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:6px;">🚀 Strategic Context: Private Turboprop Leader — DHC-515 Production Launch Era</div>
+    <div style="font-size:12px;opacity:.93;line-height:1.7;">De Havilland Canada (owned by Longview Aviation Capital) acquired the Dash 8 Q400 and Twin Otter programs from Bombardier in June 2019. The company is executing two simultaneous production programs: (1) DHC-515 amphibious firefighter — brand-new aircraft type with first assembly started March 2026, targeting 2028 delivery with 20+ firm orders including Greece (7), Canada federal, Alberta; (2) DHC-8 Q400 production restart at Strathmore, AB facility with target 2027–2028 ramp. Both programs require greenfield documentation (DHC-515) and re-qualification (Q400). <strong>Critical documentation bandwidth gap = strategic opportunity for India ER&D.</strong></div>
+  </div>
+
+  <!-- KPIs row 1 -->
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-title">Revenue (Estimated)</div>
+      <div class="kpi" id="kpi-rev">$131–384M</div>
+      <div class="kpi-label">USD · Private company</div>
+      <div class="kpi-change">Private / Estimated range</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Headcount</div>
+      <div class="kpi" id="kpi-hc">~1.75K</div>
+      <div class="kpi-label">Employees (est.)</div>
+      <div class="kpi-change">Growing with DHC-515 ramp</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Key Programs</div>
+      <div class="kpi" style="font-size:18px;">3</div>
+      <div class="kpi-label">Active aircraft programs</div>
+      <div class="kpi-change">DHC-515 · Q400 · Twin Otter</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Open Roles (Est.)</div>
+      <div class="kpi" id="kpi-roles">~85</div>
+      <div class="kpi-label">Engineering + manufacturing</div>
+      <div class="kpi-change">Documentation heavy</div>
+    </div>
+  </div>
+
+  <!-- KPIs row 2 -->
+  <div class="grid-2" style="margin-bottom:22px;">
+    <div class="card">
+      <div class="card-title">🔥 DHC-515 Status</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:8px;"><strong>First Aircraft Assembly:</strong> Started March 2026 at Strathmore, AB</div>
+        <div style="margin-bottom:8px;"><strong>Firm Orders:</strong> 20+ (Greece 7, Croatia 2, Alberta 5, Canada federal)</div>
+        <div style="margin-bottom:8px;"><strong>Target Delivery:</strong> 2028 (Greece/Croatia first customers)</div>
+        <div style="margin-bottom:8px;"><strong>Program Value:</strong> $400M+ revenue committed</div>
+        <div style="color:#c62828;font-weight:700;">🎯 Documentation Critical Path: All AMM/AFM/FCOM/SRM authored from scratch NOW</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">✈️ Q400 Restart Status</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:8px;"><strong>Production Facility:</strong> De Havilland Field, Strathmore AB (under construction)</div>
+        <div style="margin-bottom:8px;"><strong>Production Target:</strong> 2027–2028 ramp-up</div>
+        <div style="margin-bottom:8px;"><strong>In-Service Fleet:</strong> 500+ Q400s globally (Air Canada Express, FlyBe, Horizon Air targets)</div>
+        <div style="margin-bottom:8px;"><strong>Re-qualification Work:</strong> SB/AD revision cycles + supplier documentation</div>
+        <div style="color:#0055a5;font-weight:700;">📋 Parallel to DHC-515 = documentation bandwidth crunch</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sites grid -->
+  <div class="card" style="margin-bottom:22px;">
+    <div class="card-title">🌐 Global Site Footprint</div>
+    <div class="grid-3" style="margin-bottom:0;">
+      <div style="background:#f8faff;border-radius:8px;padding:14px;border-left:4px solid #0078d4;">
+        <div style="font-size:12px;font-weight:700;color:#0a2342;margin-bottom:5px;">🇨🇦 Calgary AB — HQ</div>
+        <div style="font-size:11px;color:#555;line-height:1.6;">Corporate headquarters · Finance · Strategy. Brian Chafe, CEO. Primary decision-making hub for vendor partnerships and program direction.</div>
+        <div style="margin-top:8px;"><span class="prog-badge" style="background:#0078d4;color:white;">Corporate</span><span class="prog-badge" style="background:#e8f4fd;color:#0078d4;">Strategy</span></div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:14px;border-left:4px solid #c62828;">
+        <div style="font-size:12px;font-weight:700;color:#0a2342;margin-bottom:5px;">🇨🇦 Strathmore AB — NEW MAIN</div>
+        <div style="font-size:11px;color:#555;line-height:1.6;">De Havilland Field · NEW main assembly facility. DHC-515 first aircraft started assembly March 2026. Q400 restart preparation. VP Engineering primary location. ~450 staff. <strong>Production ramp active NOW.</strong></div>
+        <div style="margin-top:8px;"><span class="prog-badge" style="background:#c62828;color:white;">DHC-515</span><span class="prog-badge" style="background:#e8f4fd;color:#c62828;">Q400 Restart</span></div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:14px;border-left:4px solid #2e7d32;">
+        <div style="font-size:12px;font-weight:700;color:#0a2342;margin-bottom:5px;">🇨🇦 Downsview ON + Mirabel QC</div>
+        <div style="font-size:11px;color:#555;line-height:1.6;">Downsview: Legacy Q400/Twin Otter support (~520 staff). Mirabel: Subassembly manufacturing (~250 staff). Both winding down from Bombardier era, refocusing on DHC-515 + Q400 support.</div>
+        <div style="margin-top:8px;"><span class="prog-badge" style="background:#2e7d32;color:white;">Legacy Support</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Programs visual -->
+  <div class="card">
+    <div class="card-title">✈️ Current Aircraft Programs</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="background:#e8f4fd;border-radius:8px;padding:14px;text-align:center;border-top:3px solid #0078d4;">
+        <div style="font-size:14px;font-weight:800;color:#0a2342;margin-bottom:4px;">DHC-515</div>
+        <div style="font-size:11px;color:#0078d4;font-weight:600;margin-bottom:6px;">Amphibious Firefighter</div>
+        <div style="font-size:10.5px;color:#555;line-height:1.7;">Brand-new aircraft<br>First assembly: March 2026<br>20+ firm orders<br>Delivery target: 2028<br><strong>Status: Production active</strong></div>
+      </div>
+      <div style="background:#e8f4fd;border-radius:8px;padding:14px;text-align:center;border-top:3px solid #0055a5;">
+        <div style="font-size:14px;font-weight:800;color:#0a2342;margin-bottom:4px;">DHC-8 Q400</div>
+        <div style="font-size:11px;color:#0055a5;font-weight:600;margin-bottom:6px;">Regional Turboprop</div>
+        <div style="font-size:10.5px;color:#555;line-height:1.7;">80-seat airliner<br>500+ in service<br>Production restart: 2027–2028<br>500+ active fleet<br><strong>Status: Restart prep</strong></div>
+      </div>
+      <div style="background:#e8f4fd;border-radius:8px;padding:14px;text-align:center;border-top:3px solid #2e7d32;">
+        <div style="font-size:14px;font-weight:800;color:#0a2342;margin-bottom:4px;">Twin Otter 400</div>
+        <div style="font-size:11px;color:#2e7d32;font-weight:600;margin-bottom:6px;">Utility Turboprop</div>
+        <div style="font-size:10.5px;color:#555;line-height:1.7;">19-seat utility<br>1,000th delivery: March 2026<br>Ongoing production<br>Viking Air (sister co.)<br><strong>Status: In production</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ KEY CONTACTS ═══ -->
+<div id="contacts" class="section">
+  <div class="section-title">👥 Key Contacts — VP Engineering & Above</div>
+  <div id="ct-cards"></div>
+</div>
+
+<!-- ═══ HIRING INTELLIGENCE ═══ -->
+<div id="hiring" class="section">
+  <div class="section-title">💼 Hiring Intelligence — Non-Cleared Roles Only</div>
+
+  <div style="background:#fef9c3;border:1.5px solid #eab308;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#713f12;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;">🔍</span>
+    <span><strong>Non-Cleared Roles Only</strong> — Cyient targets: US Citizens · Green Card holders · No citizenship restriction roles. Secret / TS / SCI / classified positions are excluded from this tracker.</span>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🔥 DHC-515 Documentation (Greenfield)</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:8px;"><strong>Critical roles:</strong></div>
+        <ul style="margin-left:16px;margin-bottom:8px;">
+          <li>S1000D AMM/AFM Technical Authors (brand-new docs, no legacy)</li>
+          <li>Certification Engineers (FAA/TC shadow cert)</li>
+          <li>Structural Analysis / FEA (CS-23 equivalent structures)</li>
+          <li>Flight Test Data Engineers</li>
+          <li>Emergency Procedures Specialists</li>
+        </ul>
+        <div style="color:#0078d4;font-weight:700;">⚡ Cyient angle: Greenfield S1000D expertise. No legacy docs to migrate. Hyderabad delivery 6-week turnaround.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Q400 Production Restart (Re-Qual)</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:8px;"><strong>Critical roles:</strong></div>
+        <ul style="margin-left:16px;margin-bottom:8px;">
+          <li>SB/AD Authoring Engineers (500+ fleet compliance)</li>
+          <li>Production Qualification Engineers (re-cert docs)</li>
+          <li>Supplier Documentation Coordination</li>
+          <li>Technical Publications Managers</li>
+          <li>IPC / Illustrated Parts Catalog Specialists</li>
+        </ul>
+        <div style="color:#0078d4;font-weight:700;">⚡ Cyient angle: Parallel workload (DHC-515 + Q400). Your team can't do both. We handle Q400 SB authoring in Hyderabad.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:22px;">
+    <div class="card-title">🌐 Hiring Signals by Site</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">Strathmore AB (Main Assembly)</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">DHC-515 production ramp + Q400 restart prep. Hiring: Structures engineers, Production planners, Manufacturing engineers, Compliance/cert support. Roles: On-site preferred but some remote ER&D. Canadian citizens / PR preferred; US Citizens cross-border OK.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">Calgary AB (HQ)</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Engineering management, Program control, Finance / supply chain. Roles: VP Engineering, Directors, Program managers. Headquarter decision-making on vendor partnerships, India sourcing strategy.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">Downsview ON (Legacy)</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Q400 legacy support, Twin Otter SB authoring. Roles: Technical publications, MRO documentation, Field service engineers. Steady-state support work, good for offshore SB content delivery.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">Mirabel QC (Subassembly)</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Component manufacturing, Supplier quality. Roles: Manufacturing engineers, Quality/AS9100D. Supplier coordination engineering — offshore-friendly for documentation/ICD support.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SIGNAL CHAINS ═══ -->
+<div id="signals" class="section">
+  <div class="section-title">📡 Signal Chains — Why DHC Is Hiring Now</div>
+
+  <!-- Chain 1 -->
+  <div class="chain" style="border:1.5px solid #bfdbfe;margin-bottom:14px;">
+    <div class="chain-num" style="background:#0055a5;">1</div>
+    <div class="chain-body">
+      <div class="chain-cell" style="background:white;">
+        <div class="chain-label" style="color:#0055a5;">✈️ Industry Signal</div>
+        <div class="chain-head">DHC-515 First Aircraft Assembly → Certification Documentation Critical Path</div>
+        <div class="chain-body-text">De Havilland began assembly of the first DHC-515 amphibious firefighter in March 2026 at Strathmore. Brand-new aircraft type = zero existing documentation. All AMM/AFM/FCOM/SRM/Emergency Procedures must be authored from scratch. Target delivery 2028 means certification documentation is the critical path RIGHT NOW. 20+ firm orders (Greece, Canada federal) create $400M+ revenue at stake — documentation delays = delivery delays = customer penalty clauses.</div>
+      </div>
+      <div class="chain-cell" style="background:#fff8f0;">
+        <div class="chain-label" style="color:#b45309;">📈 Hiring Surge</div>
+        <div class="chain-head">S1000D AMM/AFM Authoring · FAA/TC Cert Docs · FEA Structures</div>
+        <div class="chain-body-text">Active roles: Technical Authors (S1000D / ATA iSpec 2200), Certification Specialists (FAA Part 23 / CS-23 equivalent), Structural Analysis Engineers (CATIA V5, Abaqus), Flight Test Data Engineers, Emergency Procedures Writers. All deliverable from Cyient Hyderabad CoE. Strathmore engineering team owns schedule — offshore documentation is the only way to meet 2028 delivery without adding 50+ headcount to Alberta.</div>
+      </div>
+      <div class="chain-cell" style="background:#f0fdf4;">
+        <div class="chain-label" style="color:#2e7d32;">🎯 Target Contact</div>
+        <div class="chain-head">VP Engineering — De Havilland Canada (Strathmore AB)</div>
+        <div class="chain-body-text">Search: "De Havilland Canada VP Engineering" or "De Havilland Strathmore VP Engineering." Fast-sell: "DHC-515 is brand-new. You're writing all docs from scratch. Cyient Hyderabad S1000D CoE has done new-aircraft programs. Pilot: Chapter 05 Limits + Chapter 12 Servicing. 6 weeks, production-ready." Ask for: Director, Certification Engineering or Director, Technical Publications.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chain 2 -->
+  <div class="chain" style="border:1.5px solid #fde8c9;margin-bottom:14px;">
+    <div class="chain-num" style="background:#c25700;">2</div>
+    <div class="chain-body">
+      <div class="chain-cell" style="background:white;">
+        <div class="chain-label" style="color:#c25700;">✈️ Industry Signal</div>
+        <div class="chain-head">Q400 Production Restart (2027–2028) + DHC-515 In Parallel = Bandwidth Crunch</div>
+        <div class="chain-body-text">De Havilland is executing two simultaneous aircraft production programs: DHC-515 (greenfield docs) and Q400 restart (re-qualification + SB/AD cycles). Strathmore facility was just built; engineering team is lean. 500+ Q400s in active service (Air Canada Express, FlyBe, Horizon Air) generate steady SB/AD demand. Parallel production = documentation workload overload. No single team in Canada can absorb both without offshore support.</div>
+      </div>
+      <div class="chain-cell" style="background:#fff8f0;">
+        <div class="chain-label" style="color:#b45309;">📈 Hiring Surge</div>
+        <div class="chain-head">SB/AD Authoring · Production Qual Docs · Supplier Coordination</div>
+        <div class="chain-body-text">Active roles: SB/AD Technical Authors (ATA 2200 format), Production Qualification Engineers, Supplier documentation coordinators, IPC/Illustrated Parts Catalog specialists. Q400 documentation work is steady-state, repeatable, lower-risk than DHC-515 (mature aircraft, known issues). Perfect for offshore authoring — Cyient can absorb Q400 SB workload completely, freeing Strathmore team for DHC-515.</div>
+      </div>
+      <div class="chain-cell" style="background:#f0fdf4;">
+        <div class="chain-label" style="color:#2e7d32;">🎯 Target Contact</div>
+        <div class="chain-head">VP Engineering — Q400 Program (Strathmore / Calgary)</div>
+        <div class="chain-body-text">Search: "De Havilland Q400 Chief Engineer" or "De Havilland Q400 Program Manager." Pitch: "Q400 restart means SB/AD cycles every 3 months for 500+ fleet compliance. Your team can't do DHC-515 + Q400 in parallel. We've done regional turboprop documentation. Pilot: Chapter 27 Flight Controls SB package, 4-week turnaround." Entry: Parallel bandwidth = cost lever for program delivery schedule.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chain 3 -->
+  <div class="chain" style="border:1.5px solid #d4e9c9;">
+    <div class="chain-num" style="background:#2e7d32;">3</div>
+    <div class="chain-body">
+      <div class="chain-cell" style="background:white;">
+        <div class="chain-label" style="color:#2e7d32;">💰 Business Signal</div>
+        <div class="chain-head">Private Company + Government Support = Vendor-Friendly Procurement</div>
+        <div class="chain-body-text">De Havilland is privately held by Longview Aviation Capital — no public company procurement bureaucracy. Alberta government is backing the Strathmore facility. Canadian and US federal governments are ordering DHC-515s. This combination = faster vendor onboarding, less red tape than Bombardier/Airbus, and direct CEO accessibility for partnership decisions. Brian Chafe, CEO, is accessible for vendor discussions.</div>
+      </div>
+      <div class="chain-cell" style="background:#fff8f0;">
+        <div class="chain-label" style="color:#b45309;">📈 Opportunity Signal</div>
+        <div class="chain-head">India Sourcing = Cost Competitive Advantage (First-Mover Opportunity)</div>
+        <div class="chain-body-text">De Havilland has ZERO India engineering presence. All engineering is Canada-based. Cyient Hyderabad is an untapped resource. DHC-515 greenfield documentation + Q400 restart = the most aggressive timeline in turboprop history. India cost model (60% savings vs. Canada) becomes strategic advantage for program profitability. This is first-mover opportunity: be the India engineering partner before competitors recognize the gap.</div>
+      </div>
+      <div class="chain-cell" style="background:#f0fdf4;">
+        <div class="chain-label" style="color:#2e7d32;">🎯 Target Contact</div>
+        <div class="chain-head">CEO / VP Engineering — Strategic Partnership Discussion</div>
+        <div class="chain-body-text">Email hook: "Your DHC-515 timeline and Q400 restart are the most aggressive in turboprop history. Bombardier had this same constraint — they solved it with India ER&D. You don't have that footprint yet. Let's talk India delivery model for both programs." Entry: Brian Chafe, CEO (Calgary) or VP Eng at Strathmore. Ask for: Strategic partnership conversation on India sourcing.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OUTREACH PLAYBOOK ═══ -->
+<div id="outreach" class="section">
+  <div class="section-title">🤝 Outreach Playbook — <span id="op-headline"></span></div>
+  <div id="op-badge" style="display:inline-block;background:#4caf50;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:22px;"></div>
+  <div id="op-triggers" class="grid-2" style="margin-bottom:28px;"></div>
+  <div class="card" style="border-top-color:#1a1a2e;">
+    <div class="card-title">Cold → Warm: 5-Step Sequence</div>
+    <div id="op-steps"></div>
+  </div>
+</div>
+
+<!-- ═══ PARTNERSHIPS ═══ -->
+<div id="partnerships" class="section">
+  <div class="section-title">🤝 Partnerships & Alliances</div>
+  <div id="pw-cards" class="grid-2"></div>
+</div>
+
+<!-- ═══ EVENTS ═══ -->
+<div id="events" class="section">
+  <div class="section-title">📅 Industry Events — 2026 Calendar</div>
+  <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:12.5px;color:#92400e;">
+    🗓️ <strong>Why events matter:</strong> De Havilland attends key aviation shows. Pre-event outreach (2 weeks before) converts cold emails into scheduled meetings with VP Engineering and program leadership.
+  </div>
+  <div id="ev-cards" class="grid-2"></div>
+</div>
+
+<!-- ═══ PROGRAMS ═══ -->
+<div id="programs" class="section">
+  <div class="section-title">✈️ Aircraft Programs</div>
+
+  <div class="grid-2">
+    <div class="card" style="border-top-color:#0078d4;">
+      <div class="card-title" style="color:#0078d4;">DHC-515 Firefighter — Brand-New Amphibious Aircraft</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="background:#e8f4fd;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <strong>Type:</strong> Amphibious aerial firefighting platform (scooper)<br>
+          <strong>First assembly:</strong> March 2026 at Strathmore, AB<br>
+          <strong>Firm orders:</strong> 20+ (Greece 7, Croatia 2, Alberta 5, Canada federal 5+)<br>
+          <strong>Target delivery:</strong> 2028 (Greece / Croatia first)<br>
+          <strong>Engines:</strong> Twin Pratt & Whitney Canada PW123AF<br>
+          <strong>Price:</strong> Est. $20–25M per aircraft
+        </div>
+        <strong>Documentation significance:</strong> Brand-new aircraft type = all documentation written from scratch. Zero legacy content to migrate. This is the most lucrative documentation opportunity in the turboprop market right now. Cyient's greenfield S1000D expertise is exactly what De Havilland needs. Critical path: all AMM/AFM/FCOM must be production-ready by Q4 2027 for Greece delivery start 2028.
+      </div>
+    </div>
+    <div class="card" style="border-top-color:#0055a5;">
+      <div class="card-title" style="color:#0055a5;">DHC-8 Q400 — Production Restart Era</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="background:#e8f4fd;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <strong>Type:</strong> 80-seat regional turboprop airliner<br>
+          <strong>Production restart:</strong> Facility under construction at Strathmore AB<br>
+          <strong>Target production:</strong> 2027–2028 ramp-up<br>
+          <strong>In-service fleet:</strong> 500+ aircraft globally<br>
+          <strong>Engines:</strong> Pratt & Whitney Canada PW150A<br>
+          <strong>Target customers:</strong> Air Canada Express, FlyBe, Horizon Air
+        </div>
+        <strong>Documentation significance:</strong> Production restart = re-qualification engineering, Service Bulletin / Airworthiness Directive cycles for 500+ active fleet, supplier documentation updates. Mature aircraft = low-risk documentation work, perfect for steady-state offshore delivery. Parallel to DHC-515 production = documentation bandwidth crisis. This is the "bread-and-butter" offshore opportunity.
+      </div>
+    </div>
+    <div class="card" style="border-top-color:#2e7d32;">
+      <div class="card-title" style="color:#2e7d32;">Twin Otter Series 400 — Ongoing Support (Viking Air)</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="background:#f1f8e9;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <strong>Type:</strong> 19-seat utility / commuter turboprop<br>
+          <strong>Ownership:</strong> Viking Air Ltd. (sister company under Longview Aviation)<br>
+          <strong>1,000th delivery:</strong> March 2026 (major milestone)<br>
+          <strong>Current production:</strong> 20–30 units/year<br>
+          <strong>Engines:</strong> Pratt & Whitney Canada PT6A-135A<br>
+          <strong>Markets:</strong> Island-hopping, charter, humanitarian, military
+        </div>
+        <strong>Documentation significance:</strong> Steady-state production support. IPC (Illustrated Parts Catalog) updates, Service Bulletin authoring, Technical Order revisions. Low-risk, repeatable work. Good entry point for Cyient Hyderabad ER&D relationship with Longview group. Demonstrates capability for DHC-515 and Q400 work.
+      </div>
+    </div>
+    <div class="card" style="border-top-color:#999;">
+      <div class="card-title" style="color:#999;">Legacy Programs — Support Only</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="background:#f5f5f5;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <strong>DHC-7 Dash 7:</strong> Out of production (support at Downsview)<br>
+          <strong>DHC-4 Caribou:</strong> Military transport (legacy support)<br>
+          <strong>DHC-3 Otter:</strong> Support through Viking Air<br>
+          <strong>Status:</strong> Maintenance-level documentation only
+        </div>
+        <strong>Opportunity:</strong> Minimal — legacy aircraft generate steady but low-volume SB/AD work. Lower priority than DHC-515 and Q400 but represents multi-year support revenue tail.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INDIA OPPORTUNITY ═══ -->
+<div id="india" class="section">
+  <div class="section-title">🇮🇳 India Opportunity — Greenfield S1000D + Cost Advantage</div>
+
+  <div style="background:linear-gradient(135deg,#ff9800,#f44336);color:white;border-radius:10px;padding:15px 18px;margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:8px;">⚡ Strategic Opportunity: De Havilland Has Zero India Presence — FIRST-MOVER ADVANTAGE</div>
+    <div style="font-size:12px;line-height:1.7;">De Havilland is entirely Canada-based for engineering (Calgary HQ, Strathmore production, Downsview legacy). Longview Aviation (parent company) also owns Viking Air — both have zero India footprint. DHC-515 is brand-new (greenfield docs). Q400 restart is concurrent (re-qual docs). Combined timeline = fastest turboprop production ramp in history. India ER&D partnership is not optional — it's the only way to meet delivery schedules without 50+ headcount hires in Alberta. <strong>Cyient Hyderabad = first-mover advantage.</strong></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:22px;">
+    <div class="card">
+      <div class="card-title">📋 DHC-515 Greenfield Documentation (CRITICAL PATH)</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:10px;"><strong>Scope:</strong> All AMM/AFM/FCOM/SRM/Emergency Procedures written from scratch</div>
+        <div style="margin-bottom:10px;"><strong>Volume:</strong> Est. 8,000–12,000 pages S1000D (typical for new transport aircraft)</div>
+        <div style="margin-bottom:10px;"><strong>Timeline:</strong> Author by Q4 2027 (Greece delivery start 2028)</div>
+        <div style="margin-bottom:10px;"><strong>Cyient delivery model:</strong></div>
+        <ul style="margin-left:16px;">
+          <li>Hyderabad S1000D CoE (30+ authors available)</li>
+          <li>6-week turnaround for Chapter 05 (Limits) + Chapter 12 (Servicing) pilot</li>
+          <li>Parallel authoring: Chapters 1-5 + emergency procedures + IPC</li>
+          <li>Cost: 60% savings vs. Canadian on-site hire</li>
+        </ul>
+        <div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:11.5px;color:#166534;font-weight:600;">⚡ Fast-sell pitch: "DHC-515 is brand-new. All docs greenfield. Cyient Hyderabad handled new-aircraft S1000D for comparable programs. Pilot: Chapter 05 + 12, 6 weeks. Scale to full program." No legacy docs to migrate = pure advantage.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Q400 Production Restart (Parallel Workload)</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:10px;"><strong>Scope:</strong> Production re-qualification + SB/AD cycles for 500+ active fleet</div>
+        <div style="margin-bottom:10px;"><strong>Volume:</strong> Est. 2–3 Service Bulletins / month (Q400 is mature, known issues)</div>
+        <div style="margin-bottom:10px;"><strong>Timeline:</strong> Start Q1 2027, scale through 2028+ (multi-year)</div>
+        <div style="margin-bottom:10px;"><strong>Cyient delivery model:</strong></div>
+        <ul style="margin-left:16px;">
+          <li>Hyderabad regional turboprop CoE</li>
+          <li>Steady-state SB authoring team (5–8 authors)</li>
+          <li>ATA iSpec 2200 format (mature standard)</li>
+          <li>Cost: 50–60% savings vs. Downsview on-site</li>
+        </ul>
+        <div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:11.5px;color:#166534;font-weight:600;">⚡ Fast-sell pitch: "You're doing Q400 restart + DHC-515 in parallel. Your team can't absorb both. We handle Q400 SB authoring completely — Hyderabad delivery, proven processes, mature aircraft = low risk."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 Cyient India Competitive Advantages for DHC</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">1. Greenfield Expertise</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">DHC-515 is brand-new. Cyient has S1000D greenfield authoring pedigree from comparable new-aircraft programs. No legacy migration headaches. Pure documentation authoring = Hyderabad sweet spot.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">2. Parallel Capacity</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Hyderabad CoE can absorb BOTH DHC-515 (greenfield) + Q400 (SB authoring) simultaneously. Canadian team stays on program management/certification. Cyient owns documentation delivery. Unmatched scale vs. single-program competitors.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">3. Turboprop Pedigree</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Cyient has turboprop documentation experience: ATR, regional transport, Twin Otter adjacency via Viking Air ecosystem. Q400 SB authoring is low-risk, repeatable work. Proven processes.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">4. Cost Model (60% Advantage)</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">Hyderabad on-site author cost ~$60K/year. Canada equivalent ~$150K+. DHC-515 + Q400 simultaneously = 8–10 FTE commitment. India model saves $720K–$900K/year at scale. Program profitability lever.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">5. No Precedent Risk</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">De Havilland has zero India engineering vendor relationships. Cyient's first-mover advantage = custom pricing, equity stake potential, long-term partnership. No incumbent to displace.</div>
+      </div>
+      <div style="background:#f8faff;border-radius:8px;padding:12px;">
+        <div style="font-weight:700;color:#0a2342;font-size:12px;margin-bottom:5px;">6. Private Company Advantage</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6;">De Havilland is privately held (Longview Aviation). CEO accessible for strategic vendor partnerships. Less RFP bureaucracy than Bombardier. Faster vendor onboarding = faster India ramp.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:22px;">
+    <div class="card-title">💼 Outreach Script for India Strategy Conversation</div>
+    <div style="background:#f0fdf4;border-left:3px solid #0078d4;padding:12px;border-radius:0 6px 6px 0;font-size:12px;color:#0a2342;line-height:1.8;">
+      <div style="margin-bottom:12px;"><strong>"Your DHC-515 and Q400 timelines are the most aggressive in turboprop history. Two production programs in parallel, greenfield documentation for DHC-515, re-qual docs for Q400. Your team in Canada can't absorb both — standard practice is to use offshore ER&D. Bombardier did this with India for Global 8000. You're sitting on the same opportunity but haven't tapped it yet."</strong></div>
+      <div style="margin-bottom:12px;"><strong>"Cyient Hyderabad can own 100% of your documentation delivery: DHC-515 greenfield S1000D authoring + Q400 SB/AD parallel cycles. 6-week pilot: Chapter 05 + Chapter 12 production-ready deliverables. Cost model saves you 60% vs. Canadian on-site hire. And you get capacity to meet your 2028 delivery targets without adding 50 engineers to Strathmore."</strong></div>
+      <div><strong>"Let's talk about a first-conversation scope: DHC-515 Chapter 05 (Limits) + Chapter 12 (Servicing) pilot, 6 weeks. If that works, we scale to full program (both DHC-515 + Q400) by Q1 2027. This is the kind of partnership that makes your restart timeline executable."</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FAST-SELL SKILLS ═══ -->
+<div id="skills" class="section">
+  <div class="section-title">⚡ Fast-Sell Skills Matrix</div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">🎯 De Havilland Canada-Specific Skill Tags</div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;">Documentation / Tech Pubs (DHC-515 + Q400 Focus)</div>
+      <span class="tag tag-accent">S1000D Greenfield</span><span class="tag tag-accent">ATA iSpec 2200</span><span class="tag tag-accent">AMM/AFM authoring</span><span class="tag tag-accent">SRM/IPC authoring</span><span class="tag tag-accent">Service Bulletin authoring</span><span class="tag tag-accent">Airworthiness Directive compliance</span><span class="tag tag-accent">Emergency Procedures</span><span class="tag tag-accent">FAA/TC cert docs</span>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;">Structures Engineering</div>
+      <span class="tag tag-accent">CATIA V5</span><span class="tag tag-accent">Abaqus FEA</span><span class="tag tag-accent">Nastran</span><span class="tag tag-accent">FAR Part 23 structures</span><span class="tag tag-accent">Damage tolerance analysis</span><span class="tag tag-accent">DER support</span>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;">Certification / Test</div>
+      <span class="tag tag-accent">FAA Type Cert (Part 23)</span><span class="tag tag-accent">Transport Canada (TC) cert</span><span class="tag tag-accent">Flight Test Data</span><span class="tag tag-accent">Emergency Procedures Validation</span><span class="tag tag-accent">DO-178C avionics (if applicable)</span>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;">Turboprop Specific</div>
+      <span class="tag tag-accent">Pratt & Whitney integration</span><span class="tag tag-accent">PT6A / PW150A / PW123AF</span><span class="tag tag-accent">Regional airliner platforms</span><span class="tag tag-accent">Amphibious operations (DHC-515)</span>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px;text-transform:uppercase;">Credentials to Lead With</div>
+      <span class="tag tag-hot">AS9100 certified</span><span class="tag tag-hot">Cyient Hyderabad CoE</span><span class="tag tag-hot">New-aircraft S1000D expertise</span><span class="tag tag-hot">Greenfield documentation delivery</span><span class="tag tag-hot">Turboprop OEM references</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MARKET REFERENCE ═══ -->
+<div id="reference" class="section">
+  <div class="section-title">📚 Market Context</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🏆 De Havilland Canada in Turboprop Market</div>
+      <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <thead><tr style="background:#f0f8ff;"><th style="padding:8px;text-align:left;border-bottom:2px solid #0078d4;">Competitor</th><th style="padding:8px;border-bottom:2px solid #0078d4;">Primary Program</th><th style="padding:8px;border-bottom:2px solid #0078d4;">Cyient In?</th></tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;"><strong>De Havilland Canada</strong></td><td style="padding:8px;">Q400 (80-seat) · DHC-515 (firefighter)</td><td style="padding:8px;"><span style="color:#ff9800;font-weight:700;">🎯 Target</span></td></tr>
+          <tr style="border-bottom:1px solid #eee;background:#fafafa;"><td style="padding:8px;"><strong>ATR</strong><br><span style="font-size:10px;color:#888;">Airbus-Leonardo joint venture</span></td><td style="padding:8px;">ATR 42/72 (42–72 seat)</td><td style="padding:8px;"><span style="color:#2e7d32;font-weight:700;">✅ Known</span></td></tr>
+          <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;"><strong>Saab Availability</strong><br><span style="font-size:10px;color:#888;">Regional platform</span></td><td style="padding:8px;">Saab 340 (30-36 seat legacy)</td><td style="padding:8px;"><span style="color:#888;font-weight:700;">⚪ Research</span></td></tr>
+          <tr style="border-bottom:1px solid #eee;background:#fafafa;"><td style="padding:8px;"><strong>Embraer (Regional Jet)</strong></td><td style="padding:8px;">E170/E190 (70–190 seat jet)</td><td style="padding:8px;"><span style="color:#ff9800;font-weight:700;">🎯 Target</span></td></tr>
+          <tr><td style="padding:8px;"><strong>Bombardier (Legacy Q400)</strong></td><td style="padding:8px;">Q400 (production ended 2020)</td><td style="padding:8px;"><span style="color:#888;font-weight:700;">Historical</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📈 Key Trends Driving DHC Growth</div>
+      <div style="font-size:12px;color:#444;line-height:1.8;">
+        <div style="margin-bottom:8px;padding:8px;background:#f8faff;border-radius:6px;"><strong>1. Firefighting Aircraft Demand:</strong> Global wildfire seasons intensifying (Canada, Australia, Europe, Greece). DHC-515 addresses undersupply of aerial firefighting platforms. Greece order validates market.</div>
+        <div style="margin-bottom:8px;padding:8px;background:#e8f4fd;border-radius:6px;"><strong>2. Regional Airliner Resurgence:</strong> Post-COVID, ultra-low-cost carriers (Southwest, Frontier) demand regional capacity. Q400 is higher-capacity, lower-cost-per-seat than smaller turboprops.</div>
+        <div style="margin-bottom:8px;padding:8px;background:#f1f8e9;border-radius:6px;"><strong>3. Supply Chain Decentralization:</strong> Canada-based manufacturing attracts US/NATO customers (especially federal/military). Avoids China/geopolitical exposure.</div>
+        <div style="padding:8px;background:#fef3c7;border-radius:6px;"><strong>4. Private Equity Backing:</strong> Longview Aviation provides capital-efficient ownership. No quarterly earnings pressure = long-term program investment vs. public OEM quarterly cycles.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main-content -->
+</div><!-- end container -->
+
+<script>
+// Populate dynamic data
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Key Contacts ─────────────────────────────────────────────────────
+  if(DHC_DATA.keyContacts && document.getElementById('ct-cards')) {
+    document.getElementById('ct-cards').innerHTML = DHC_DATA.keyContacts.map(c => `
+      <div class="contact-card" style="border-left-color:${c.color};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+          <div class="contact-name">${c.name}</div>
+          <span style="background:${c.color};color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;">${c.badge}</span>
+        </div>
+        <div class="contact-title">${c.title}</div>
+        <div class="contact-location">📍 ${c.loc}</div>
+        <div style="margin-top:8px;background:#f8faff;border-radius:6px;padding:8px 10px;font-size:11px;color:#1a1a2e;line-height:1.6;">💬 ${c.pitch}</div>
+      </div>`).join('');
+  }
+
+  // ── Outreach Playbook ────────────────────────────────────────────────
+  const op = DHC_DATA.outreachPlaybook;
+  if(op && document.getElementById('op-headline')) {
+    document.getElementById('op-headline').textContent = op.headline;
+    document.getElementById('op-badge').textContent    = op.badge;
+    document.getElementById('op-triggers').innerHTML   = op.triggers.map(t => `
+      <div class="card" style="border-top-color:#0078d4;">
+        <div class="card-title">${t.icon} ${t.label}</div>
+        <p style="font-size:12.5px;line-height:1.7;color:#444;margin-bottom:10px;">${t.body}</p>
+        <div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:0 6px 6px 0;font-size:11.5px;color:#166534;font-weight:600;">⚡ Action: ${t.action}</div>
+      </div>`).join('');
+    document.getElementById('op-steps').innerHTML = op.coldToWarm.map(s => `
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f0f0f0;">
+        <div style="min-width:28px;height:28px;background:#0078d4;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${s.step}</div>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px;">${s.label}</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;">${s.body}</div></div>
+      </div>`).join('');
+    document.getElementById('pw-cards').innerHTML = DHC_DATA.partnerships.map(p => `
+      <div class="card" style="border-top-color:#0284c7;">
+        <div class="card-title">${p.name} <span class="tag">${p.type}</span> <span class="tag" style="background:#dcfce7;color:#166534;">${p.status}</span></div>
+        <p style="font-size:12.5px;line-height:1.7;color:#444;margin-bottom:10px;">${p.desc}</p>
+        <div style="background:#eff6ff;border-left:3px solid #0284c7;padding:8px 12px;border-radius:0 6px 6px 0;font-size:11.5px;color:#1e40af;font-weight:600;">🎯 Cyient Angle: ${p.angle}</div>
+      </div>`).join('');
+    document.getElementById('ev-cards').innerHTML = DHC_DATA.events.map(e => `
+      <div class="card" style="border-top-color:#d97706;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div class="card-title" style="margin-bottom:0;">${e.name}</div>
+          <span style="font-size:12px;font-weight:700;">${e.priority}</span>
+        </div>
+        <div style="font-size:12px;color:#666;margin-bottom:6px;">📍 ${e.location} &nbsp;·&nbsp; 📅 ${e.date} &nbsp;·&nbsp; <span class="tag">${e.type}</span></div>
+        <p style="font-size:12.5px;line-height:1.7;color:#444;">${e.why}</p>
+      </div>`).join('');
+  }
+
+  document.getElementById('sb-refresh').textContent = DHC_DATA.lastRefreshed;
+  document.getElementById('kpi-rev').textContent  = DHC_DATA.revenue;
+  document.getElementById('kpi-hc').textContent  = '~' + Math.round((DHC_DATA.headcount + DHC_DATA.employees)/2/100)*100/10 + 'K';
+  document.getElementById('kpi-roles').textContent = '~' + DHC_DATA.openRoles + '+';
+});
+
+function switchSection(evt, id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// Activate first section
+document.getElementById('overview').classList.add('active');
+</script>
+</body>
+</html>
